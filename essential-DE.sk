@@ -1,0 +1,115 @@
+# EssentialPro_DE.sk - Deutsche Version
+# Befehle: /home, /sethome, /tpa, /tpaccept, /rtp, /togglepvp, /quiz und mehr
+
+command /sethome:
+    trigger:
+        set {homes::%uuid of player%} to location of player
+        send "&aDein Zuhause wurde gespeichert! Benutze &e/home &aum dorthin zu teleportieren."
+
+command /home:
+    trigger:
+        if {homes::%uuid of player%} is set:
+            teleport player to {homes::%uuid of player%}
+            send "&aDu wirst zu deinem Zuhause teleportiert..."
+        else:
+            send "&cDu hast noch kein Zuhause gesetzt! Benutze &e/sethome"
+
+command /tpa [<offline player>]:
+    trigger:
+        if arg-1 is not set:
+            send "&cBitte gib einen Spieler an, um eine Teleportanfrage zu senden."
+            stop
+        set {tpa::%arg-1%} to player
+        send "&aTeleport-Anfrage an &e%arg-1% &agesendet."
+        send "&e%player% &amöchte zu dir teleportieren. Benutze &e/tpaccept &azur Bestätigung." to arg-1
+
+command /tpaccept:
+    trigger:
+        if {tpa::%player%} is set:
+            teleport {tpa::%player%} to player
+            send "&aSpieler &e%{tpa::%player%}% &awurde zu dir teleportiert."
+            send "&aDu wurdest zu &e%player% &ateleportiert." to {tpa::%player%}
+            delete {tpa::%player%}
+        else:
+            send "&cDu hast keine offenen Teleportanfragen."
+
+command /rtp:
+    trigger:
+        set {_x} to random integer between -5000 and 5000
+        set {_z} to random integer between -5000 and 5000
+        set {_loc} to location at {_x}, 100, {_z} in world "world"
+        loop 100 times:
+            subtract 1 from y-coordinate of {_loc}
+            if block at {_loc} is not air:
+                add 1 to y-coordinate of {_loc}
+                teleport player to {_loc}
+                send "&aErfolgreich teleportiert!"
+                stop
+        send "&cEs konnte kein sicheres Gebiet zum Teleportieren gefunden werden."
+
+command /togglepvp:
+    trigger:
+        if {pvp::%uuid of player%} is not set:
+            set {pvp::%uuid of player%} to true
+        set {pvp::%uuid of player%} to not {pvp::%uuid of player%}
+        if {pvp::%uuid of player%} is true:
+            send "&aPvP wurde aktiviert."
+        else:
+            send "&cPvP wurde deaktiviert."
+
+command /quiz:
+    trigger:
+        set {_a} to random integer between 1 and 10
+        set {_b} to random integer between 1 and 10
+        set {quiz_answer::%player%} to {_a} + {_b}
+        send "&bBerechne: &e%{_a}% + %{_b}% &b= ? Schreibe die Antwort im Chat."
+
+on chat:
+    if {quiz_answer::%player%} is set:
+        if message is "%{quiz_answer::%player%}%":
+            send "&aRichtig! Du hast &e1 Diamant &agewonnen!"
+            give player diamond
+            delete {quiz_answer::%player%}
+            cancel event
+        else:
+            send "&cFalsch! Versuche es noch einmal."
+            cancel event
+
+command /afk:
+    trigger:
+        if {afk::%uuid of player%} is not set:
+            set {afk::%uuid of player%} to true
+            send "&aDu bist jetzt im AFK-Modus."
+        else:
+            set {afk::%uuid of player%} to false
+            send "&cDu bist nicht mehr im AFK-Modus."
+
+command /msg [<player>] <text>:
+    trigger:
+        if arg-1 is set and arg-2 is set:
+            send "&7[Privatnachricht] &e%player% &8>> &f%arg-2%" to arg-1
+            send "&7[Privatnachricht] &e%player% &8<< &f%arg-2%" to player
+
+command /broadcast <text>:
+    trigger:
+        send "&e[Öffentliche Nachricht]: &f%arg-1%" to all players
+
+command /kick [<player>] <text>:
+    trigger:
+        if arg-1 is set:
+            kick arg-1 due to arg-2
+            send "&aSpieler &e%arg-1% &awurde gekickt: &f%arg-2%"
+        else:
+            send "&cGib den Spieler an, den du kicken möchtest."
+
+command /balance:
+    trigger:
+        send "&aDein Kontostand: &e%{economy.balance of player}%" to player
+
+command /pay [<player>] <amount>:
+    trigger:
+        if arg-1 is set and arg-2 is set:
+            pay player arg-1 amount arg-2
+            send "&aDu hast &e%arg-2%&a an &e%arg-1% &agezahlt."
+        else:
+            send "&cGib den Spieler und den Betrag an."

@@ -1,0 +1,115 @@
+# EssentialPro_RU.sk - Русская версия
+# Команды: /home, /sethome, /tpa, /tpaccept, /rtp, /togglepvp, /quiz, и другие
+
+command /sethome:
+    trigger:
+        set {homes::%uuid of player%} to location of player
+        send "&aДом установлен! Теперь вы можете использовать &e/home &aдля возвращения."
+
+command /home:
+    trigger:
+        if {homes::%uuid of player%} is set:
+            teleport player to {homes::%uuid of player%}
+            send "&aТелепортация домой..."
+        else:
+            send "&cУ вас нет установленного дома! Используйте &e/sethome"
+
+command /tpa [<offline player>]:
+    trigger:
+        if arg-1 is not set:
+            send "&cПожалуйста, укажите игрока для запроса телепортации."
+            stop
+        set {tpa::%arg-1%} to player
+        send "&aЗапрос телепортации отправлен игроку &e%arg-1%&a."
+        send "&e%player% &aхочет телепортироваться к вам. Используйте &e/tpaccept &aдля подтверждения." to arg-1
+
+command /tpaccept:
+    trigger:
+        if {tpa::%player%} is set:
+            teleport {tpa::%player%} to player
+            send "&aИгрок &e%{tpa::%player%}% &aбыл телепортирован к вам."
+            send "&aВы были телепортированы к &e%player%&a." to {tpa::%player%}
+            delete {tpa::%player%}
+        else:
+            send "&cУ вас нет активных запросов на телепортацию."
+
+command /rtp:
+    trigger:
+        set {_x} to random integer between -5000 and 5000
+        set {_z} to random integer between -5000 and 5000
+        set {_loc} to location at {_x}, 100, {_z} in world "world"
+        loop 100 times:
+            subtract 1 from y-coordinate of {_loc}
+            if block at {_loc} is not air:
+                add 1 to y-coordinate of {_loc}
+                teleport player to {_loc}
+                send "&aСлучайная телепортация выполнена!"
+                stop
+        send "&cНе удалось найти безопасное место для телепортации."
+
+command /togglepvp:
+    trigger:
+        if {pvp::%uuid of player%} is not set:
+            set {pvp::%uuid of player%} to true
+        set {pvp::%uuid of player%} to not {pvp::%uuid of player%}
+        if {pvp::%uuid of player%} is true:
+            send "&aPvP включено."
+        else:
+            send "&cPvP выключено."
+
+command /quiz:
+    trigger:
+        set {_a} to random integer between 1 and 10
+        set {_b} to random integer between 1 and 10
+        set {quiz_answer::%player%} to {_a} + {_b}
+        send "&bРешите задачу: &e%{_a}% + %{_b}% &b= ? Напишите ответ в чат."
+
+on chat:
+    if {quiz_answer::%player%} is set:
+        if message is "%{quiz_answer::%player%}%":
+            send "&aПравильно! Вы получаете &e1 алмаз!"
+            give player diamond
+            delete {quiz_answer::%player%}
+            cancel event
+        else:
+            send "&cНеправильно! Попробуйте ещё раз."
+            cancel event
+
+command /afk:
+    trigger:
+        if {afk::%uuid of player%} is not set:
+            set {afk::%uuid of player%} to true
+            send "&aВы теперь в режиме AFK."
+        else:
+            set {afk::%uuid of player%} to false
+            send "&cВы больше не в режиме AFK."
+
+command /msg [<player>] <text>:
+    trigger:
+        if arg-1 is set and arg-2 is set:
+            send "&7[Личное сообщение] &e%player% &8>> &f%arg-2%" to arg-1
+            send "&7[Личное сообщение] &e%player% &8<< &f%arg-2%" to player
+
+command /broadcast <text>:
+    trigger:
+        send "&e[РАСШИРЕННОЕ ОБЪЯВЛЕНИЕ]: &f%arg-1%" to all players
+
+command /kick [<player>] <text>:
+    trigger:
+        if arg-1 is set:
+            kick arg-1 due to arg-2
+            send "&aИгрок &e%arg-1% &aвыгнан за причину: &f%arg-2%"
+        else:
+            send "&cУкажите игрока для выгоня."
+
+command /balance:
+    trigger:
+        send "&aВаш баланс: &e%{economy.balance of player}%" to player
+
+command /pay [<player>] <amount>:
+    trigger:
+        if arg-1 is set and arg-2 is set:
+            pay player arg-1 amount arg-2
+            send "&aВы перевели &e%arg-2%&a на игрока &e%arg-1%."
+        else:
+            send "&cУкажите игрока и сумму для перевода."
