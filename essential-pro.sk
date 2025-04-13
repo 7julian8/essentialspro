@@ -1,0 +1,280 @@
+# EssentialPro.sk - A Skript emulating lots of EssentialsX commands!
+# Commands: /home, /sethome, /back, /spawn, /setspawn, /tpa, /tpaccept, /rtp, /togglepvp, /quiz, 
+#           /feed, /heal, /afk, /msg, /r, /setwarp, /warp, /delwarp, /nick, /suicide, /broadcast, /kit, /balance, /pay, /mute, /kick
+
+# -------------------
+# Home Commands
+# -------------------
+command /sethome:
+    trigger:
+        set {home.%player%} to location of player
+        send "&aHome set!" to player
+
+command /home:
+    trigger:
+        if {home.%player%} is set:
+            teleport player to {home.%player%}
+            send "&aTeleported to home!" to player
+        else:
+            send "&cYou haven't set a home yet. Use /sethome." to player
+
+# -------------------
+# Teleportation Commands
+# -------------------
+command /tpa [<offline player>]:
+    trigger:
+        if arg is not set:
+            send "&cUsage: /tpa <player>" to player
+            stop
+        if arg is a player:
+            set {tpa.%arg%} to player
+            send "&eTPA request sent to %arg%." to player
+            send "&eType /tpaccept to accept the TPA request." to arg
+        else:
+            send "&cPlayer not found." to player
+
+command /tpaccept:
+    trigger:
+        if {tpa.%player%} is set:
+            teleport {tpa.%player%} to player
+            send "&aTeleport accepted!" to player
+            send "&aYou have been teleported to %player%." to {tpa.%player%}
+            delete {tpa.%player%}
+        else:
+            send "&cNo TPA request found." to player
+
+command /rtp:
+    trigger:
+        # Adjust range if needed!
+        set {_x} to random integer between -1000 and 1000
+        set {_z} to random integer between -1000 and 1000
+        set {_y} to highest solid block at location at {_x}, 100, {_z}
+        teleport player to location at {_x}, {_y}, {_z}
+        send "&aRandomly teleported!" to player
+
+command /spawn:
+    trigger:
+        if {spawn} is set:
+            teleport player to {spawn}
+            send "&aTeleported to spawn!" to player
+        else:
+            send "&cSpawn is not set. Use /setspawn." to player
+
+command /setspawn:
+    trigger:
+        set {spawn} to location of player
+        send "&aSpawn set to your location!" to player
+
+# -------------------
+# Back Command (recalls last location)
+# -------------------
+# Save previous location on teleport
+on teleport:
+    if event-entity is a player:
+        set {lastloc.%player%} to location of player
+
+command /back:
+    trigger:
+        if {lastloc.%player%} is set:
+            teleport player to {lastloc.%player%}
+            send "&aTeleported back!" to player
+        else:
+            send "&cNo previous location stored." to player
+
+# -------------------
+# Toggle PVP Command
+# -------------------
+command /togglepvp:
+    trigger:
+        if {pvp.%player%} is not set:
+            set {pvp.%player%} to true
+        else:
+            delete {pvp.%player%}
+        send "&ePVP toggled: %{pvp.%player%}%"
+
+on damage of player:
+    attacker is a player
+    if {pvp.%attacker%} is not set or {pvp.%victim%} is not set:
+        cancel event
+        send "&cPVP is disabled for you or the other player."
+
+# -------------------
+# Quiz Command (Math Quiz)
+# -------------------
+command /quiz:
+    trigger:
+        set {_a} to random integer between 1 and 10
+        set {_b} to random integer between 1 and 10
+        set {quiz.answer.%player%} to {_a} + {_b}
+        send "&6Math Quiz: What is %{_a}% + %{_b}%?" to player
+        send "&7Type your answer in chat." to player
+
+# -------------------
+# Chat Listener (for /quiz and /mute)
+# -------------------
+on chat:
+    # Check if player is muted
+    if {mute.%player%} is set:
+        cancel event
+        send "&cYou are muted." to player
+        stop
+
+    # Check if player has an active quiz answer waiting
+    if {quiz.answer.%player%} is set:
+        if message is "%{quiz.answer.%player%}%":
+            send "&aCorrect!" to player
+            give player 1 diamond
+        else:
+            send "&cWrong! The correct answer was %{quiz.answer.%player%}%." to player
+        cancel event
+        delete {quiz.answer.%player%}
+
+# -------------------
+# Feed & Heal Commands
+# -------------------
+command /feed:
+    trigger:
+        set food level of player to 20
+        send "&aYou have been fed." to player
+
+command /heal:
+    trigger:
+        set health of player to 20
+        send "&aYou have been healed." to player
+
+# -------------------
+# AFK Command
+# -------------------
+command /afk:
+    trigger:
+        if {afk.%player%} is set:
+            delete {afk.%player%}
+            send "&aYou are no longer AFK." to player
+        else:
+            set {afk.%player%} to true
+            send "&eYou are now AFK." to player
+
+# -------------------
+# Messaging Commands (/msg and /r)
+# -------------------
+command /msg <offlineplayer> <text>:
+    trigger:
+        if arg-1 is not set or arg-2 is not set:
+            send "&cUsage: /msg <player> <message>" to player
+            stop
+        send "&7[You -> %arg-1%]: %arg-2%" to player
+        send "&7[%player% -> You]: %arg-2%" to arg-1
+        set {lastMsg.%arg-1%} to player
+
+command /r <text>:
+    trigger:
+        if {lastMsg.%player%} is set:
+            send "&7[You -> %{lastMsg.%player%}%]: %arg%" to player
+            send "&7[%player% -> You]: %arg%" to {lastMsg.%player%}
+        else:
+            send "&cNo one has messaged you recently." to player
+
+# -------------------
+# Warp Commands
+# -------------------
+command /setwarp <text>:
+    trigger:
+        set {warp::%arg-1%} to location of player
+        send "&aWarp %arg-1% set!" to player
+
+command /warp <text>:
+    trigger:
+        if {warp::%arg-1%} is set:
+            teleport player to {warp::%arg-1%}
+            send "&aTeleported to warp %arg-1%!" to player
+        else:
+            send "&cWarp %arg-1% does not exist." to player
+
+command /delwarp <text>:
+    trigger:
+        if {warp::%arg-1%} is set:
+            delete {warp::%arg-1%}
+            send "&aWarp %arg-1% deleted." to player
+        else:
+            send "&cWarp %arg-1% does not exist." to player
+
+# -------------------
+# Nickname Command
+# -------------------
+command /nick <text>:
+    trigger:
+        set player's display name to arg-1
+        set {nick.%player%} to arg-1
+        send "&aNickname set to %arg-1%" to player
+
+# -------------------
+# Suicide Command
+# -------------------
+command /suicide:
+    trigger:
+        damage player by 1000
+        send "&cYou have committed suicide." to player
+
+# -------------------
+# Broadcast Command (requires permission: broadcast.use)
+# -------------------
+command /broadcast <text>:
+    permission: broadcast.use
+    trigger:
+        broadcast "&6[Broadcast] %message%"
+
+# -------------------
+# Kit Command (example: starter kit)
+# -------------------
+command /kit <text>:
+    trigger:
+        if arg-1 is "starter":
+            give player 5 bread
+            give player 3 apples
+            send "&aStarter kit given!" to player
+        else:
+            send "&cThat kit does not exist." to player
+
+# -------------------
+# Economy Commands (/balance and /pay)
+# -------------------
+command /balance:
+    trigger:
+        if {balance.%player%} is not set:
+            set {balance.%player%} to 100.0
+        send "&aYour balance: $%{balance.%player%}%" to player
+
+command /pay <offlineplayer> <number>:
+    trigger:
+        if arg-1 is not set or arg-2 is not set:
+            send "&cUsage: /pay <player> <amount>" to player
+            stop
+        if {balance.%player%} < arg-2:
+            send "&cYou don't have enough money." to player
+            stop
+        subtract arg-2 from {balance.%player%}
+        add arg-2 to {balance.%arg-1%}
+        send "&aPayment successful!" to player
+
+# -------------------
+# Mute Command
+# -------------------
+command /mute <offlineplayer>:
+    trigger:
+        set {mute.%arg-1%} to true
+        send "&aPlayer %arg-1% muted." to player
+
+# -------------------
+# Kick Command (requires permission: kick.use)
+# -------------------
+command /kick <offlineplayer> [<text>]:
+    permission: kick.use
+    trigger:
+        if arg-1 is not set:
+            send "&cUsage: /kick <player> [reason]" to player
+            stop
+        if arg-2 is not set:
+            kick arg-1 due to "Kicked by %player%"
+        else:
+            kick arg-1 due to "Kicked by %player%: %arg-2%"
+        send "&aPlayer %arg-1% has been kicked." to player
